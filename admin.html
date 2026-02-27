@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DryFu Admin - Secure</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+
+    <div id="loginScreen">
+        <div class="login-box">
+            <h2 style="margin:0 0 20px 0; color:#134E5E;">🔒 Admin Access</h2>
+            <input type="password" id="adminPass" class="pass-input" placeholder="PIN" maxlength="4"
+                inputmode="numeric">
+            <button class="login-btn" onclick="checkLogin()">UNLOCK</button>
+            <p id="loginError" style="color:red; font-size:12px; display:none; margin-top:10px;">❌ Wrong PIN</p>
+        </div>
+    </div>
+
+    <div class="container" id="adminContent" style="display:none;">
+
+        <div class="card">
+            <h2 class="title">🎟️ Create Coupon</h2>
+            <label class="input-label">Discount Amount (₹)</label>
+            <input type="tel" id="adminAmount" class="big-input" placeholder="e.g. 100" inputmode="numeric">
+
+            <div class="pill-group">
+                <button class="pill-btn" onclick="setAmt(50)">₹50</button>
+                <button class="pill-btn" onclick="setAmt(100)">₹100</button>
+                <button class="pill-btn" onclick="setAmt(200)">₹200</button>
+            </div>
+
+            <label class="input-label">Customer Mobile Number</label>
+            <input type="tel" id="custMobile" class="big-input" placeholder="e.g. 9876543210" inputmode="numeric"
+                maxlength="10">
+
+            <label class="input-label">Start Date</label>
+            <input type="date" id="adminDate" class="big-input">
+
+            <button class="main-btn gen-btn" onclick="generateCoupon()">GENERATE CODE</button>
+
+            <div id="newCouponResult" class="result-display">
+                <div class="res-badge">✅ GENERATED SUCCESSFULLY</div>
+                <div id="resCode" class="res-code">---</div>
+                <div class="date-row">
+                    <div class="date-box start-box">
+                        <span class="d-label">START DATE</span>
+                        <span id="resFrom" class="d-value">--/--/--</span>
+                    </div>
+                    <div class="date-box end-box">
+                        <span class="d-label">EXPIRY DATE</span>
+                        <span id="resThru" class="d-value">--/--/--</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyCode()">📋 Copy Code</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="title">📊 Today's Report</h2>
+            <div class="stats-container">
+                <div class="stat-box stat-gen">
+                    <span id="statGenCount" class="stat-num">0</span>
+                    <span class="stat-label">Generated Today</span>
+                </div>
+                <div class="stat-box stat-red">
+                    <span id="statRedeemVal" class="stat-num">₹0</span>
+                    <span class="stat-label">Redeemed Today</span>
+                </div>
+            </div>
+            <div id="historyBody" class="history-list"></div>
+            <button class="reset-link" onclick="clearAllData()">Reset History</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
