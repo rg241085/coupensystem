@@ -1,0 +1,709 @@
+:root {
+    --primary: #134E5E;
+    --secondary: #71B280;
+    --success: #25D366;
+    --danger: #ef4444;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #eef2f5;
+    padding: 15px;
+}
+
+.container {
+    max-width: 500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.title {
+    color: var(--primary);
+    text-align: center;
+    font-size: 20px;
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.input-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.big-input {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.big-input:focus {
+    border-color: var(--primary);
+}
+
+.pill-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.pill-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--primary);
+    background: white;
+    color: var(--primary);
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.main-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+}
+
+.gen-btn {
+    background: var(--primary);
+}
+
+.verify-btn {
+    background: #333;
+}
+
+/* --- NEW STATS DASHBOARD --- */
+.stats-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stat-box {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+}
+
+.stat-gen {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.stat-red {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.stat-num {
+    font-size: 20px;
+    font-weight: 900;
+    display: block;
+}
+
+.stat-label {
+    font-size: 10px;
+    font-weight: bold;
+    opacity: 0.9;
+    text-transform: uppercase;
+}
+
+
+/* --- RESULT BOX --- */
+.result-display {
+    margin-top: 20px;
+    padding: 20px;
+    background: #ffffff;
+    border: 2px dashed #22c55e;
+    border-radius: 16px;
+    text-align: center;
+    animation: fadeIn 0.4s ease-out;
+    display: none;
+}
+
+.res-badge {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 900;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.res-code {
+    font-size: 36px;
+    font-weight: 900;
+    color: #1e293b;
+    letter-spacing: 1px;
+    margin: 10px 0 20px 0;
+}
+
+.date-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.date-box {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.start-box {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.end-box {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+.d-label {
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.d-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    color: #334155;
+}
+
+.copy-btn {
+    background: #1e293b;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    width: 100%;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* --- HISTORY LIST --- */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hist-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border-left: 5px solid var(--primary);
+}
+
+.h-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.h-code {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.h-detail {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.h-exp {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.wa-btn {
+    width: 42px;
+    height: 42px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+.status-used {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+}
+
+.status-expired {
+    border-left-color: #94a3b8;
+    opacity: 0.7;
+}
+
+/* Verify Result */
+/* --- PREMIUM RESULT BOX (POPUP STYLE) --- */
+.result-box {
+    margin-top: 25px;
+    padding: 0;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    /* Badi Shadow */
+    text-align: center;
+    overflow: hidden;
+    display: none;
+    animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    /* Bounce Effect */
+    border: 2px solid white;
+}
+
+/* Success Header */
+.res-header {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    /* WhatsApp Green Gradient */
+    padding: 20px;
+    color: white;
+}
+
+.res-icon {
+    font-size: 45px;
+    display: block;
+    margin-bottom: 5px;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.res-title {
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* Body Content */
+.res-body {
+    padding: 25px;
+    background: #fff;
+}
+
+.res-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.res-final {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px dashed #e2e8f0;
+    /* Bill jaisi line */
+}
+
+.pay-label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.pay-amount {
+    display: block;
+    font-size: 42px;
+    /* Bahut Bada Amount */
+    font-weight: 900;
+    color: #134E5E;
+    margin-top: 5px;
+}
+
+/* Error State */
+.res-error {
+    border-color: #ef4444;
+}
+
+.res-error .res-header {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.res-error .pay-amount {
+    color: #ef4444;
+    font-size: 22px;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* --- PREMIUM REPORT TABLE --- */
+.report-card {
+    background: white;
+    padding: 0;
+    /* Padding hataya taaki header full width ho */
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.report-header {
+    background: #f8fafc;
+    padding: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0;
+}
+
+.report-date {
+    font-size: 11px;
+    font-weight: bold;
+    color: #64748b;
+    background: #e2e8f0;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.stats-row {
+    display: flex;
+    padding: 15px;
+    gap: 10px;
+}
+
+.mini-stat {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.ms-label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: bold;
+    display: block;
+}
+
+.ms-val {
+    font-size: 16px;
+    font-weight: 900;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Table Styling */
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Courier New', Courier, monospace;
+    /* Bill jaisa look */
+}
+
+.receipt-table th {
+    background: #134E5E;
+    color: white;
+    text-align: left;
+    padding: 10px 15px;
+    font-size: 11px;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.receipt-table td {
+    padding: 12px 15px;
+    border-bottom: 1px dashed #e2e8f0;
+    /* Dashed line for bill look */
+    font-size: 13px;
+    color: #333;
+    font-weight: bold;
+}
+
+.receipt-table tr:last-child td {
+    border-bottom: none;
+}
+
+.col-right {
+    text-align: right;
+}
+
+.t-inv {
+    color: #334155;
+}
+
+.t-disc {
+    color: #ef4444;
+}
+
+/* Red for discount */
+.t-final {
+    color: #15803d;
+    font-weight: 900;
+}
+
+/* Green for final */
+
+/* --- PREMIUM RESULT BOX --- */
+.result-box {
+    margin-top: 25px;
+    padding: 0;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    overflow: hidden;
+    display: none;
+    animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    border: 2px solid white;
+}
+
+.res-header {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    padding: 20px;
+    color: white;
+}
+
+.res-icon {
+    font-size: 45px;
+    display: block;
+    margin-bottom: 5px;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.res-title {
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.res-body {
+    padding: 25px;
+    background: #fff;
+}
+
+.res-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.res-final {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px dashed #e2e8f0;
+}
+
+.pay-label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.pay-amount {
+    display: block;
+    font-size: 42px;
+    font-weight: 900;
+    color: #134E5E;
+    margin-top: 5px;
+}
+
+/* Error State */
+.res-error {
+    border-color: #ef4444;
+}
+
+.res-error .res-header {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.res-error .pay-amount {
+    color: #ef4444;
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* TABLE STYLING for 4 Cols */
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Courier New', monospace;
+}
+
+.receipt-table th {
+    background: #134E5E;
+    color: white;
+    text-align: left;
+    padding: 8px 5px;
+    font-size: 10px;
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+.receipt-table td {
+    padding: 10px 5px;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 11px;
+    color: #333;
+    font-weight: bold;
+}
+
+.col-right {
+    text-align: right;
+}
+
+.t-disc {
+    color: #ef4444;
+}
+
+.t-final {
+    color: #15803d;
+    font-weight: 900;
+}
+
+/* --- LOGIN SCREEN (Admin Lock) --- */
+#loginScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #134E5E;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    flex-direction: column;
+    padding-top: 120px;
+}
+
+.login-box {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+}
+
+.pass-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    letter-spacing: 5px;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 15px;
+    background: #25D366;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* --- DOWNLOAD BUTTON (Check Panel) --- */
+.download-btn {
+    background: #1e293b;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    width: 100%;
+    margin-top: 15px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
