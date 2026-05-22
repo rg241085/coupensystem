@@ -75,7 +75,17 @@ function generateCoupon() {
         document.getElementById('newCouponResult').style.display = 'block';
         document.getElementById('resCode').innerText = code;
         document.getElementById('resFrom').innerText = formatToIndianDate(from);
-        document.getElementById('resThru').innerText = formatToIndianDate(exp.toISOString().split('T')[0]);
+
+        // Expiry date ko ek variable mein save kar lete hain
+        let expiryDateISO = exp.toISOString().split('T')[0];
+        document.getElementById('resThru').innerText = formatToIndianDate(expiryDateISO);
+
+        // WhatsApp button ke andar dynamic data set karna
+        let waBtn = document.getElementById('shareWhatsappBtn');
+        if (waBtn) {
+            waBtn.setAttribute('onclick', `sendW('${mob}', '${code}', '${expiryDateISO}', ${amt})`);
+        }
+
         document.getElementById('custMobile').value = "";
     });
 }
@@ -171,7 +181,6 @@ function copyCode() { navigator.clipboard.writeText(document.getElementById('res
 function clearAllData() { if (confirm("Clear All?")) firebase.database().ref('coupons').remove(); }
 
 
-// --- 5. CHECK PANEL ---
 function validateCoupon() {
     const billInput = document.getElementById('checkBill');
     const codeInput = document.getElementById('checkInput');
@@ -186,11 +195,12 @@ function validateCoupon() {
         const c = snap.val();
         resBox.style.display = 'block';
 
-        if (!c) { showError("INVALID", "Code not found"); return; }
-        if (c.used) { showError("USED", `At: ${c.usedAt}`); return; }
+        // ERROR STATES: Yahan sabme aakhri parameter 'bill' bheja gaya hai
+        if (!c) { showError("INVALID CODE", "Code not found in system", bill); return; }
+        if (c.used) { showError("ALREADY USED", `Redeemed At: ${c.usedAt}`, bill); return; }
 
         const todayISO = new Date().toISOString().split('T')[0];
-        if (todayISO < c.validFrom) { showError("NOT ACTIVE", `Starts: ${formatToIndianDate(c.validFrom)}`); return; }
+        if (todayISO < c.validFrom) { showError("NOT ACTIVE YET", `Starts: ${formatToIndianDate(c.validFrom)}`, bill); return; }
 
         // Grace Period Logic
         const GRACE_DAYS = 5;
@@ -198,9 +208,10 @@ function validateCoupon() {
         expiryDate.setDate(expiryDate.getDate() + GRACE_DAYS);
         const hardStopISO = expiryDate.toISOString().split('T')[0];
 
-        if (todayISO > hardStopISO) { showError("EXPIRED", `Date: ${formatToIndianDate(c.validThru)}`); return; }
-        if (bill < 750) { showError("LOW BILL", `Min ₹750 req`); return; }
+        if (todayISO > hardStopISO) { showError("EXPIRED", `Expired Date: ${formatToIndianDate(c.validThru)}`, bill); return; }
+        if (bill < 750) { showError("LOW BILL", `Min ₹750 req for discount`, bill); return; }
 
+        // SUCCESS STATE (Agar coupon pass ho gaya)
         const now = new Date();
         const timeStr = now.toLocaleDateString('en-IN') + ", " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -212,24 +223,73 @@ function validateCoupon() {
             graceMsg = `<div style="font-size:10px; color:#d97706; margin-top:5px;">⚠️ Grace Period Applied (+${GRACE_DAYS} Days)</div>`;
         }
 
+        const finalAmt = bill - c.amount;
+
+        // Yahan apna actual UPI ID daalein (e.g., 9876543210@paytm)
+        const upiId = "7014702933@YBL";
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${finalAmt}%26cu=INR`;
+
         resBox.className = "result-box";
         resBox.innerHTML = `
             <div class="res-header"><span class="res-icon">🎉</span><h3 class="res-title">CONGRATULATIONS!</h3></div>
             <div class="res-body">
                 <div class="res-row"><span>Invoice</span><span>₹${bill}</span></div>
                 <div class="res-row" style="color:#22c55e;"><span>Discount</span><span>- ₹${c.amount}</span></div>
-                <div class="res-final"><span class="pay-label">COLLECT</span><span class="pay-amount">₹${bill - c.amount}</span></div>
+                <div class="res-final"><span class="pay-label">COLLECT</span><span class="pay-amount">₹${finalAmt}</span></div>
                 ${graceMsg}
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                    <p style="font-size:11px; color:#15803d; font-weight:900; margin: 0 0 10px 0; letter-spacing: 1px;">SCAN TO PAY FINAL AMOUNT</p>
+                    <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:10px; mix-blend-mode: multiply;">
+                </div>
             </div>`;
+
         renderLocalReport();
         billInput.value = ""; codeInput.value = "";
     });
 }
 
-function showError(t, m) {
+function showError(t, m, billAmt = null) {
     const r = document.getElementById('checkResult');
     r.className = "result-box res-error";
-    r.innerHTML = `<div class="res-header" style="background:#ef4444"><span class="res-icon">⚠️</span><h3 class="res-title">${t}</h3></div><div class="res-body"><span class="pay-amount" style="font-size:18px;color:#555">${m}</span></div>`;
+
+    if (billAmt) {
+        // Yahan apna actual UPI ID daalein (e.g., 9876543210@paytm)
+        const upiId = "70147029@YBL";
+
+        // Dynamic QR Code link jisme amount aur DryFu ka naam set hai
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${billAmt}%26cu=INR`;
+
+        r.innerHTML = `
+            <div class="res-header" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                <span class="res-icon">⚠️</span>
+                <h3 class="res-title">${t}</h3>
+                <div style="font-size:12px; margin-top:5px; font-weight:bold; opacity:0.9;">${m}</div>
+            </div>
+            <div class="res-body">
+                <div class="res-row"><span>Invoice</span><span>₹${billAmt}</span></div>
+                <div class="res-row" style="color:#ef4444;"><span>Discount</span><span>- ₹0</span></div>
+                <div class="res-final" style="border-top: 2px dashed #e2e8f0; margin-top: 15px; padding-top: 15px;">
+                    <span class="pay-label">COLLECT AMOUNT</span>
+                    <span class="pay-amount" style="color: #134E5E;">₹${billAmt}</span>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <p style="font-size:11px; color:#64748b; font-weight:900; margin: 0 0 10px 0; letter-spacing: 1px;">SCAN TO PAY (UPI)</p>
+                    <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:10px; mix-blend-mode: multiply;">
+                </div>
+            </div>
+        `;
+    } else {
+        r.innerHTML = `
+            <div class="res-header" style="background:#ef4444">
+                <span class="res-icon">⚠️</span><h3 class="res-title">${t}</h3>
+            </div>
+            <div class="res-body">
+                <span class="pay-amount" style="font-size:18px;color:#555">${m}</span>
+            </div>
+        `;
+    }
 }
 
 function addToLocalReport(inv, disc, code) {
