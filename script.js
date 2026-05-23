@@ -12,18 +12,39 @@ try { firebase.initializeApp(firebaseConfig); window.db = firebase.database(); }
 catch (e) { console.error(e); }
 
 // --- 2. SECURITY & UTILS ---
-const ADMIN_PIN = "0904";
+// ✅ FIX: PIN ko Firebase se check kiya jata hai ab (JS mein plain text nahi)
+// Firebase mein jaake: config/pin = "0904" set karo (ya jo bhi PIN chahiye)
+async function checkLogin() {
+    const input = document.getElementById('adminPass').value.trim();
+    if (!input) return;
 
-function checkLogin() {
-    const input = document.getElementById('adminPass').value;
-    if (input === ADMIN_PIN) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-        document.getElementById('adminPass').value = "";
+    try {
+        const snap = await firebase.database().ref('config/pin').once('value');
+        const storedPin = snap.val();
+
+        if (input === String(storedPin)) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('adminPass').value = "";
+        }
+    } catch (e) {
+        // Fallback: agar Firebase se pin na mile
+        console.error("PIN fetch error:", e);
+        alert("Connection error. Check internet.");
     }
 }
+
+// Enter key se bhi login ho
+document.addEventListener('DOMContentLoaded', () => {
+    const passInput = document.getElementById('adminPass');
+    if (passInput) {
+        passInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') checkLogin();
+        });
+    }
+});
 
 function downloadReport() {
     const element = document.getElementById("printableReport");
@@ -43,6 +64,7 @@ function formatInput(el) {
     if (v.length > 6) f += "-" + v.substring(6, 9);
     el.value = f;
 }
+
 function setAmt(v) { document.getElementById('adminAmount').value = v; }
 function formatToIndianDate(d) { if (!d) return "--"; return d.split('-').reverse().join('/'); }
 
@@ -59,10 +81,17 @@ window.onload = function () {
 
 // --- 4. ADMIN LOGIC ---
 function generateCoupon() {
-    const amt = document.getElementById('adminAmount').value;
+    const amt = document.getElementById('adminAmount').value.trim();
     const from = document.getElementById('adminDate').value;
-    const mob = document.getElementById('custMobile').value;
-    if (!amt || !from || !mob) { alert("Fill details"); return; }
+    const mob = document.getElementById('custMobile').value.trim();
+
+    // ✅ FIX: Mobile number validation
+    if (!amt || !from || !mob) { alert("Sabhi fields bharein"); return; }
+    if (mob.length !== 10 || !/^\d{10}$/.test(mob)) {
+        alert("Mobile number 10 digits ka hona chahiye");
+        return;
+    }
+    if (parseInt(amt) <= 0) { alert("Valid discount amount daalein"); return; }
 
     const n = () => Math.floor(100 + Math.random() * 900);
     const code = `${n()}-${n()}-${n()}`;
@@ -76,17 +105,17 @@ function generateCoupon() {
         document.getElementById('resCode').innerText = code;
         document.getElementById('resFrom').innerText = formatToIndianDate(from);
 
-        // Expiry date ko ek variable mein save kar lete hain
         let expiryDateISO = exp.toISOString().split('T')[0];
         document.getElementById('resThru').innerText = formatToIndianDate(expiryDateISO);
 
-        // WhatsApp button ke andar dynamic data set karna
         let waBtn = document.getElementById('shareWhatsappBtn');
         if (waBtn) {
             waBtn.setAttribute('onclick', `sendW('${mob}', '${code}', '${expiryDateISO}', ${amt})`);
         }
 
         document.getElementById('custMobile').value = "";
+    }).catch(err => {
+        alert("Error: " + err.message);
     });
 }
 
@@ -95,7 +124,7 @@ function fetchCoupons() {
     if (!body) return;
     firebase.database().ref('coupons').on('value', (snap) => {
         const data = snap.val();
-        if (!data) { body.innerHTML = "<div style='text-align:center'>No Data</div>"; return; }
+        if (!data) { body.innerHTML = "<div style='text-align:center;padding:20px;color:#999'>Koi coupon nahi hai</div>"; return; }
         let list = Object.values(data);
         const today = new Date().toISOString().split('T')[0];
 
@@ -111,7 +140,6 @@ function fetchCoupons() {
     });
 }
 
-// *** UPDATED: renderHistory ab Amount bhi pass karega ***
 function renderHistory(list) {
     const body = document.getElementById('historyBody');
     const todayISO = new Date().toISOString().split('T')[0];
@@ -148,70 +176,60 @@ function renderHistory(list) {
     }
 }
 
-// *** // *** UPDATED WHATSAPP LOGIC: With "How to Use" Instructions ***
+// WhatsApp message with 3 scenarios
 function sendW(mob, code, date, amount) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const expDate = new Date(date);
     const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
     const formattedDate = formatToIndianDate(date);
 
-    // 1. KAISE USE KAREIN (Instructions)
     const howToUse = "\n\n💡 *Kaise Use Karein?*\nApne Delivery Boy ko payment karte samay ye Code dikhayein aur turant Discount payein!";
-
-    // --- TERMS AND CONDITIONS (Short Version) ---
     const tnc = "\n\n*📝 T&C:*\n• Min Order: ₹750\n• One-time use only\n• Not exchangeable for Cash\n• T&C Apply";
     let msg = "";
 
     if (diffDays <= 0) {
-        // SCENARIO 1: AAJ LAST DAY
         msg = `🚨 *LAST CHANCE ALERT!* 🚨\n\nDryFu Coupon *₹${amount} OFF* aaj raat expire ho jayega!\n\n🎟️ Code: *${code}*\n⏳ Validity: *AAJ RAAT TAK*\n${howToUse}\n👉 Order: www.dryfu.com${tnc}`;
-    }
-    else if (diffDays <= 5) {
-        // SCENARIO 2: WARNING
+    } else if (diffDays <= 5) {
         msg = `⏳ *Sirf ${diffDays} Din Bache Hain* ⏳\n\nCoupon expire hone wala hai!\n\n💰 Value: *₹${amount} OFF*\n🎟️ Code: *${code}*\n📅 Expiring: *${formattedDate}*\n${howToUse}\n👉 Order: www.dryfu.com${tnc}`;
-    }
-    else {
-        // SCENARIO 3: WELCOME
+    } else {
         msg = `🎁 *Special Gift For You!* 🎁\n\nHum aapke liye laye hain Discount Coupon.\n\n💰 *FLAT ₹${amount} OFF*\n🎟️ Code: *${code}*\n📅 Valid till: ${formattedDate}\n${howToUse}\n👉 Order: www.dryfu.com${tnc}`;
     }
 
     window.open(`https://wa.me/91${mob}?text=${encodeURIComponent(msg)}`);
 }
+
 function copyCode() { navigator.clipboard.writeText(document.getElementById('resCode').innerText); alert("Copied!"); }
-function clearAllData() { if (confirm("Clear All?")) firebase.database().ref('coupons').remove(); }
+function clearAllData() { if (confirm("Sab data delete kar dein? Ye undo nahi hoga.")) firebase.database().ref('coupons').remove(); }
 
-
+// --- 5. VERIFY LOGIC ---
 function validateCoupon() {
     const billInput = document.getElementById('checkBill');
     const codeInput = document.getElementById('checkInput');
     const resBox = document.getElementById('checkResult');
     const bill = parseFloat(billInput.value);
-    const code = codeInput.value;
+    const code = codeInput.value.trim();
 
     resBox.style.display = 'none';
-    if (!bill || !code) { alert("Enter details"); return; }
+    if (!bill || !code) { alert("Invoice aur Code dono daalein"); return; }
 
     firebase.database().ref('coupons/' + code).once('value', (snap) => {
         const c = snap.val();
         resBox.style.display = 'block';
 
-        // ERROR STATES: Yahan sabme aakhri parameter 'bill' bheja gaya hai
-        if (!c) { showError("INVALID CODE", "Code not found in system", bill); return; }
+        if (!c) { showError("INVALID CODE", "Code system mein nahi mila", bill); return; }
         if (c.used) { showError("ALREADY USED", `Redeemed At: ${c.usedAt}`, bill); return; }
 
         const todayISO = new Date().toISOString().split('T')[0];
-        if (todayISO < c.validFrom) { showError("NOT ACTIVE YET", `Starts: ${formatToIndianDate(c.validFrom)}`, bill); return; }
+        if (todayISO < c.validFrom) { showError("NOT ACTIVE YET", `Shuru hoga: ${formatToIndianDate(c.validFrom)}`, bill); return; }
 
-        // Grace Period Logic
         const GRACE_DAYS = 5;
         const expiryDate = new Date(c.validThru);
         expiryDate.setDate(expiryDate.getDate() + GRACE_DAYS);
         const hardStopISO = expiryDate.toISOString().split('T')[0];
 
-        if (todayISO > hardStopISO) { showError("EXPIRED", `Expired Date: ${formatToIndianDate(c.validThru)}`, bill); return; }
-        if (bill < 750) { showError("LOW BILL", `Min ₹750 req for discount`, bill); return; }
+        if (todayISO > hardStopISO) { showError("EXPIRED", `Expire Date: ${formatToIndianDate(c.validThru)}`, bill); return; }
+        if (bill < 750) { showError("LOW BILL", `Minimum ₹750 chahiye discount ke liye`, bill); return; }
 
-        // SUCCESS STATE (Agar coupon pass ho gaya)
         const now = new Date();
         const timeStr = now.toLocaleDateString('en-IN') + ", " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -225,7 +243,7 @@ function validateCoupon() {
 
         const finalAmt = bill - c.amount;
 
-        // Yahan apna actual UPI ID daalein (e.g., 9876543210@paytm)
+        // ✅ FIX: Sahi UPI ID dono jagah same hai ab
         const upiId = "7014702933@YBL";
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${finalAmt}%26cu=INR`;
 
@@ -237,7 +255,6 @@ function validateCoupon() {
                 <div class="res-row" style="color:#22c55e;"><span>Discount</span><span>- ₹${c.amount}</span></div>
                 <div class="res-final"><span class="pay-label">COLLECT</span><span class="pay-amount">₹${finalAmt}</span></div>
                 ${graceMsg}
-                
                 <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
                     <p style="font-size:11px; color:#15803d; font-weight:900; margin: 0 0 10px 0; letter-spacing: 1px;">SCAN TO PAY FINAL AMOUNT</p>
                     <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:10px; mix-blend-mode: multiply;">
@@ -254,10 +271,8 @@ function showError(t, m, billAmt = null) {
     r.className = "result-box res-error";
 
     if (billAmt) {
-        // Yahan apna actual UPI ID daalein (e.g., 9876543210@paytm)
-        const upiId = "70147029@YBL";
-
-        // Dynamic QR Code link jisme amount aur DryFu ka naam set hai
+        // ✅ FIX: Sahi aur same UPI ID use ho rahi hai
+        const upiId = "7014702933@YBL";
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${billAmt}%26cu=INR`;
 
         r.innerHTML = `
@@ -273,13 +288,11 @@ function showError(t, m, billAmt = null) {
                     <span class="pay-label">COLLECT AMOUNT</span>
                     <span class="pay-amount" style="color: #134E5E;">₹${billAmt}</span>
                 </div>
-                
                 <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
                     <p style="font-size:11px; color:#64748b; font-weight:900; margin: 0 0 10px 0; letter-spacing: 1px;">SCAN TO PAY (UPI)</p>
                     <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:10px; mix-blend-mode: multiply;">
                 </div>
-            </div>
-        `;
+            </div>`;
     } else {
         r.innerHTML = `
             <div class="res-header" style="background:#ef4444">
@@ -287,8 +300,7 @@ function showError(t, m, billAmt = null) {
             </div>
             <div class="res-body">
                 <span class="pay-amount" style="font-size:18px;color:#555">${m}</span>
-            </div>
-        `;
+            </div>`;
     }
 }
 
@@ -298,6 +310,7 @@ function addToLocalReport(inv, disc, code) {
     r.push({ code, invoice: inv, discount: disc, final: inv - disc, date: d });
     localStorage.setItem('dryfu_my_report', JSON.stringify(r));
 }
+
 function renderLocalReport() {
     const tb = document.getElementById('dailyReportBody');
     if (!tb) return;
@@ -308,12 +321,20 @@ function renderLocalReport() {
     if (r.length !== t.length) localStorage.setItem('dryfu_my_report', JSON.stringify(t));
 
     let h = "", td = 0;
-    if (t.length === 0) h = "<tr><td colspan='4' style='text-align:center;padding:20px;color:#999;font-size:12px'>Empty</td></tr>";
-    else t.reverse().forEach(i => {
-        td += i.discount;
-        h += `<tr><td style="color:#134E5E;font-size:11px">${i.code}</td><td>₹${i.invoice}</td><td class="col-right" style="color:red">-₹${i.discount}</td><td class="col-right" style="font-weight:900;color:green">₹${i.final}</td></tr>`;
-    });
+    if (t.length === 0) {
+        h = "<tr><td colspan='4' style='text-align:center;padding:20px;color:#999;font-size:12px'>Aaj koi redemption nahi</td></tr>";
+    } else {
+        t.slice().reverse().forEach(i => {
+            td += i.discount;
+            h += `<tr>
+                <td style="color:#134E5E;font-size:11px">${i.code}</td>
+                <td>₹${i.invoice}</td>
+                <td class="col-right t-disc">-₹${i.discount}</td>
+                <td class="col-right t-final">₹${i.final}</td>
+            </tr>`;
+        });
+    }
     tb.innerHTML = h;
     document.getElementById('myRedeemCount').innerText = t.length;
     document.getElementById('myTotalDisc').innerText = "₹" + td;
-} 
+}
