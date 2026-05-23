@@ -11,33 +11,33 @@ const firebaseConfig = {
 try { firebase.initializeApp(firebaseConfig); window.db = firebase.database(); }
 catch (e) { console.error(e); }
 
-// --- 2. SECURITY & UTILS ---
-// ✅ FIX: PIN ko Firebase se check kiya jata hai ab (JS mein plain text nahi)
-// Firebase mein jaake: config/pin = "0904" set karo (ya jo bhi PIN chahiye)
-async function checkLogin() {
-    const input = document.getElementById('adminPass').value.trim();
-    if (!input) return;
+// --- 2. SECURITY & UTILS (UPDATED WITH FIREBASE AUTH) ---
 
-    try {
-        const snap = await firebase.database().ref('config/pin').once('value');
-        const storedPin = snap.val();
-
-        if (input === String(storedPin)) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
-        } else {
-            document.getElementById('loginError').style.display = 'block';
-            document.getElementById('adminPass').value = "";
-        }
-    } catch (e) {
-        // Fallback: agar Firebase se pin na mile
-        console.error("PIN fetch error:", e);
-        alert("Connection error. Check internet.");
-    }
-}
-
-// Enter key se bhi login ho
+// Jaise hi page load hoga, check karega ki user pehle se logged in hai ya nahi
 document.addEventListener('DOMContentLoaded', () => {
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged((user) => {
+            const loginScreen = document.getElementById('loginScreen');
+            const adminContent = document.getElementById('adminContent');
+
+            if (user) {
+                // User logged in hai -> Login screen chhupao, Admin content dikhao
+                if (loginScreen) loginScreen.style.display = 'none';
+                if (adminContent) adminContent.style.display = 'block';
+
+                // Agar admin page par hain toh abhi coupons fetch karein
+                if (document.getElementById('adminDate')) {
+                    fetchCoupons();
+                }
+            } else {
+                // User logged out hai -> Login screen dikhao
+                if (loginScreen) loginScreen.style.display = 'flex';
+                if (adminContent) adminContent.style.display = 'none';
+            }
+        });
+    }
+
+    // Enter key support for login
     const passInput = document.getElementById('adminPass');
     if (passInput) {
         passInput.addEventListener('keydown', (e) => {
@@ -45,6 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Naya Secure Login Function
+async function checkLogin() {
+    const password = document.getElementById('adminPass').value.trim();
+    const errorEl = document.getElementById('loginError');
+    if (!password) return;
+
+    try {
+        // Aapka set kiya hua admin email yahan automatic use ho raha hai
+        await firebase.auth().signInWithEmailAndPassword('ravigupta2410@gmail.com', password);
+        if (errorEl) errorEl.style.display = 'none';
+    } catch (e) {
+        console.error("Login Error:", e);
+        if (errorEl) {
+            errorEl.innerText = "❌ Galat Password ya Network Error!";
+            errorEl.style.display = 'block';
+        }
+        document.getElementById('adminPass').value = "";
+    }
+}
 
 function downloadReport() {
     const element = document.getElementById("printableReport");
@@ -72,7 +92,7 @@ function formatToIndianDate(d) { if (!d) return "--"; return d.split('-').revers
 window.onload = function () {
     if (document.getElementById('adminDate')) {
         document.getElementById('adminDate').value = new Date().toISOString().split('T')[0];
-        fetchCoupons();
+        // fetchCoupons() yahan se hata diya, ab wo onAuthStateChanged se call hoga
     }
     if (document.getElementById('dailyReportBody')) {
         renderLocalReport();
@@ -85,7 +105,6 @@ function generateCoupon() {
     const from = document.getElementById('adminDate').value;
     const mob = document.getElementById('custMobile').value.trim();
 
-    // ✅ FIX: Mobile number validation
     if (!amt || !from || !mob) { alert("Sabhi fields bharein"); return; }
     if (mob.length !== 10 || !/^\d{10}$/.test(mob)) {
         alert("Mobile number 10 digits ka hona chahiye");
@@ -243,7 +262,6 @@ function validateCoupon() {
 
         const finalAmt = bill - c.amount;
 
-        // ✅ FIX: Sahi UPI ID dono jagah same hai ab
         const upiId = "7014702933@YBL";
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${finalAmt}%26cu=INR`;
 
@@ -271,7 +289,6 @@ function showError(t, m, billAmt = null) {
     r.className = "result-box res-error";
 
     if (billAmt) {
-        // ✅ FIX: Sahi aur same UPI ID use ho rahi hai
         const upiId = "7014702933@YBL";
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${billAmt}%26cu=INR`;
 
