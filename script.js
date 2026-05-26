@@ -206,13 +206,22 @@ function renderHistory(list) {
                 <span class="h-exp" style="color:${isExp ? 'red' : 'green'}">📅 ${formatToIndianDate(c.validThru)} (${txt})</span>
                 ${c.used ? `<span style="font-size:10px; color:red; font-weight:bold;">✅ Redeemed: ${c.usedAt}</span>` : ''}
             </div>
-          <div class="h-right" style="display: flex; align-items: center; gap: 12px;">
+         <div class="h-right" style="display: flex; align-items: center; gap: 8px;">
                 ${!c.used && !isExp ? `
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <button style="background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; width: 28px; height: 28px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="editCoupon('${c.code}', ${c.amount})" title="Edit">✏️</button>
-                        <button style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; width: 28px; height: 28px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="deleteCoupon('${c.code}')" title="Delete">🗑️</button>
+                    <button onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})" title="Share on WhatsApp"
+                        style="background: #25d366; color: white; border: none; border-radius: 12px; width: 62px; height: 62px; font-size: 38px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.45); transition: transform 0.1s ease;">
+                        📲 </button>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <button onclick="editCoupon('${c.code}', ${c.amount})" title="Edit Amount (Requires confirmation)"
+                            style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; width: 22px; height: 22px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
+                            ✏️
+                        </button>
+                        <button onclick="deleteCoupon('${c.code}')" title="Delete Coupon (Requires confirmation)"
+                            style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; width: 22px; height: 22px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
+                            🗑️
+                        </button>
                     </div>
-                    <button class="wa-btn" style="width: 55px; height: 55px; font-size: 32px; border-radius: 14px; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);" onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})" title="Share on WhatsApp">📲</button>
                 ` : ''}
             </div>
         </div>`;
