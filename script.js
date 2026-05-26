@@ -99,7 +99,6 @@ window.onload = function () {
     }
 };
 
-// --- 4. ADMIN LOGIC ---
 function generateCoupon() {
     const amt = document.getElementById('adminAmount').value.trim();
     const from = document.getElementById('adminDate').value;
@@ -112,31 +111,55 @@ function generateCoupon() {
     }
     if (parseInt(amt) <= 0) { alert("Valid discount amount daalein"); return; }
 
-    const n = () => Math.floor(100 + Math.random() * 900);
-    const code = `${n()}-${n()}-${n()}`;
-    let exp = new Date(from); exp.setMonth(exp.getMonth() + 1);
+    const todayISO = new Date().toISOString().split('T')[0];
 
-    firebase.database().ref('coupons/' + code).set({
-        code, amount: parseInt(amt), validFrom: from, validThru: exp.toISOString().split('T')[0],
-        mobile: mob, used: false, createdAt: new Date().toISOString()
-    }).then(() => {
-        document.getElementById('newCouponResult').style.display = 'block';
-        document.getElementById('resCode').innerText = code;
-        document.getElementById('resFrom').innerText = formatToIndianDate(from);
-
-        let expiryDateISO = exp.toISOString().split('T')[0];
-        document.getElementById('resThru').innerText = formatToIndianDate(expiryDateISO);
-
-        let waBtn = document.getElementById('shareWhatsappBtn');
-        if (waBtn) {
-            waBtn.setAttribute('onclick', `sendW('${mob}', '${code}', '${expiryDateISO}', ${amt})`);
+    // NAYA LOGIC: Check karein ki is mobile par aaj koi coupon bana hai ya nahi
+    firebase.database().ref('coupons').orderByChild('mobile').equalTo(mob).once('value', (snap) => {
+        let alreadyExistsToday = false;
+        if (snap.exists()) {
+            snap.forEach(child => {
+                const c = child.val();
+                // Agar createdAt aaj ki date se shuru hota hai
+                if (c.createdAt && c.createdAt.startsWith(todayISO)) {
+                    alreadyExistsToday = true;
+                }
+            });
         }
 
-        document.getElementById('custMobile').value = "";
-    }).catch(err => {
-        alert("Error: " + err.message);
+        if (alreadyExistsToday) {
+            alert("⚠️ LIMIT REACHED: Is mobile number par aaj pehle se hi ek code ban chuka hai. Ek din me ek number par ek hi code allow hai.");
+            return; // Code aage run nahi hoga
+        }
+
+        // Agar check pass ho gaya, toh coupon banayein
+        const n = () => Math.floor(100 + Math.random() * 900);
+        const code = `${n()}-${n()}-${n()}`;
+        let exp = new Date(from); exp.setMonth(exp.getMonth() + 1);
+
+        firebase.database().ref('coupons/' + code).set({
+            code, amount: parseInt(amt), validFrom: from, validThru: exp.toISOString().split('T')[0],
+            mobile: mob, used: false, createdAt: new Date().toISOString()
+        }).then(() => {
+            document.getElementById('newCouponResult').style.display = 'block';
+            document.getElementById('resCode').innerText = code;
+            document.getElementById('resFrom').innerText = formatToIndianDate(from);
+
+            let expiryDateISO = exp.toISOString().split('T')[0];
+            document.getElementById('resThru').innerText = formatToIndianDate(expiryDateISO);
+
+            let waBtn = document.getElementById('shareWhatsappBtn');
+            if (waBtn) {
+                waBtn.setAttribute('onclick', `sendW('${mob}', '${code}', '${expiryDateISO}', ${amt})`);
+            }
+
+            document.getElementById('custMobile').value = "";
+        }).catch(err => {
+            alert("Error: " + err.message);
+        });
     });
 }
+
+
 
 function fetchCoupons() {
     const body = document.getElementById('historyBody');
@@ -183,8 +206,12 @@ function renderHistory(list) {
                 <span class="h-exp" style="color:${isExp ? 'red' : 'green'}">📅 ${formatToIndianDate(c.validThru)} (${txt})</span>
                 ${c.used ? `<span style="font-size:10px; color:red; font-weight:bold;">✅ Redeemed: ${c.usedAt}</span>` : ''}
             </div>
-            <div class="h-right">
-                ${!c.used && !isExp ? `<button class="wa-btn" onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})">📲</button>` : ''}
+          <div class="h-right" style="display: flex; gap: 5px;">
+                ${!c.used && !isExp ? `
+                    <button class="wa-btn" style="background: #3b82f6; width: 35px; height: 35px; font-size: 16px;" onclick="editCoupon('${c.code}', ${c.amount})" title="Edit Amount">✏️</button>
+                    <button class="wa-btn" style="background: #ef4444; width: 35px; height: 35px; font-size: 16px;" onclick="deleteCoupon('${c.code}')" title="Delete">🗑️</button>
+                    <button class="wa-btn" style="width: 35px; height: 35px; font-size: 16px;" onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})" title="Share">📲</button>
+                ` : ''}
             </div>
         </div>`;
     });
@@ -220,6 +247,27 @@ function sendW(mob, code, date, amount) {
 function copyCode() { navigator.clipboard.writeText(document.getElementById('resCode').innerText); alert("Copied!"); }
 function clearAllData() { if (confirm("Sab data delete kar dein? Ye undo nahi hoga.")) firebase.database().ref('coupons').remove(); }
 
+
+// NAYA LOGIC: Edit aur Delete functions
+function deleteCoupon(code) {
+    if (confirm(`⚠️ WARNING: Kya aap sach mein Coupon [ ${code} ] delete karna chahte hain?\n\nYe action wapas nahi hoga.`)) {
+        firebase.database().ref('coupons/' + code).remove()
+            .catch(err => alert("Error: " + err.message));
+    }
+}
+
+function editCoupon(code, oldAmt) {
+    const newAmt = prompt(`Coupon [ ${code} ] ka NAYA discount amount (₹) daalein:`, oldAmt);
+    if (newAmt !== null && newAmt.trim() !== "") {
+        const parsedAmt = parseInt(newAmt);
+        if (!isNaN(parsedAmt) && parsedAmt > 0) {
+            firebase.database().ref('coupons/' + code).update({ amount: parsedAmt })
+                .catch(err => alert("Error: " + err.message));
+        } else {
+            alert("Kripya sahi number daalein.");
+        }
+    }
+}
 // --- 5. VERIFY LOGIC ---
 function validateCoupon() {
     const billInput = document.getElementById('checkBill');
