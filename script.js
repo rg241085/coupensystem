@@ -206,11 +206,13 @@ function renderHistory(list) {
                 <span class="h-exp" style="color:${isExp ? 'red' : 'green'}">📅 ${formatToIndianDate(c.validThru)} (${txt})</span>
                 ${c.used ? `<span style="font-size:10px; color:red; font-weight:bold;">✅ Redeemed: ${c.usedAt}</span>` : ''}
             </div>
-          <div class="h-right" style="display: flex; gap: 5px;">
+          <div class="h-right" style="display: flex; align-items: center; gap: 12px;">
                 ${!c.used && !isExp ? `
-                    <button class="wa-btn" style="background: #3b82f6; width: 35px; height: 35px; font-size: 16px;" onclick="editCoupon('${c.code}', ${c.amount})" title="Edit Amount">✏️</button>
-                    <button class="wa-btn" style="background: #ef4444; width: 35px; height: 35px; font-size: 16px;" onclick="deleteCoupon('${c.code}')" title="Delete">🗑️</button>
-                    <button class="wa-btn" style="width: 35px; height: 35px; font-size: 16px;" onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})" title="Share">📲</button>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <button style="background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; width: 28px; height: 28px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="editCoupon('${c.code}', ${c.amount})" title="Edit">✏️</button>
+                        <button style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; width: 28px; height: 28px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="deleteCoupon('${c.code}')" title="Delete">🗑️</button>
+                    </div>
+                    <button class="wa-btn" style="width: 55px; height: 55px; font-size: 32px; border-radius: 14px; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);" onclick="sendW('${c.mobile}','${c.code}','${c.validThru}', ${c.amount})" title="Share on WhatsApp">📲</button>
                 ` : ''}
             </div>
         </div>`;
