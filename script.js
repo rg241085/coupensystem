@@ -288,44 +288,48 @@ function validateCoupon() {
     const code = codeInput.value.trim();
 
     resBox.style.display = 'none';
-    if (!bill || !code) { alert("Invoice aur Code dono daalein"); return; }
 
-    firebase.database().ref('coupons/' + code).once('value', (snap) => {
-        const c = snap.val();
-        resBox.style.display = 'block';
+    if (!bill || !code) {
+        alert("Invoice aur Code dono daalein");
+        return;
+    }
 
-        if (!c) { showError("INVALID CODE", "Code system mein nahi mila", bill); return; }
-        if (c.used) { showError("ALREADY USED", `Redeemed At: ${c.usedAt}`, bill); return; }
+    firebase.database().ref('coupons/' + code).once('value')
+        .then((snap) => {
+            const c = snap.val();
+            resBox.style.display = 'block';
 
-        const todayISO = new Date().toISOString().split('T')[0];
-        if (todayISO < c.validFrom) { showError("NOT ACTIVE YET", `Shuru hoga: ${formatToIndianDate(c.validFrom)}`, bill); return; }
+            if (!c) { showError("INVALID CODE", "Code system mein nahi mila", bill); return; }
+            if (c.used) { showError("ALREADY USED", `Redeemed At: ${c.usedAt}`, bill); return; }
 
-        const GRACE_DAYS = 5;
-        const expiryDate = new Date(c.validThru);
-        expiryDate.setDate(expiryDate.getDate() + GRACE_DAYS);
-        const hardStopISO = expiryDate.toISOString().split('T')[0];
+            const todayISO = new Date().toISOString().split('T')[0];
+            if (todayISO < c.validFrom) { showError("NOT ACTIVE YET", `Shuru hoga: ${formatToIndianDate(c.validFrom)}`, bill); return; }
 
-        if (todayISO > hardStopISO) { showError("EXPIRED", `Expire Date: ${formatToIndianDate(c.validThru)}`, bill); return; }
-        if (bill < 750) { showError("LOW BILL", `Minimum ₹750 chahiye discount ke liye`, bill); return; }
+            const GRACE_DAYS = 5;
+            const expiryDate = new Date(c.validThru);
+            expiryDate.setDate(expiryDate.getDate() + GRACE_DAYS);
+            const hardStopISO = expiryDate.toISOString().split('T')[0];
 
-        const now = new Date();
-        const timeStr = now.toLocaleDateString('en-IN') + ", " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            if (todayISO > hardStopISO) { showError("EXPIRED", `Expire Date: ${formatToIndianDate(c.validThru)}`, bill); return; }
+            if (bill < 750) { showError("LOW BILL", `Minimum ₹750 chahiye discount ke liye`, bill); return; }
 
-        firebase.database().ref('coupons/' + code).update({ used: true, usedAt: timeStr });
-        addToLocalReport(bill, c.amount, code);
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('en-IN') + ", " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-        let graceMsg = "";
-        if (todayISO > c.validThru) {
-            graceMsg = `<div style="font-size:10px; color:#d97706; margin-top:5px;">⚠️ Grace Period Applied (+${GRACE_DAYS} Days)</div>`;
-        }
+            firebase.database().ref('coupons/' + code).update({ used: true, usedAt: timeStr });
+            addToLocalReport(bill, c.amount, code);
 
-        const finalAmt = bill - c.amount;
+            let graceMsg = "";
+            if (todayISO > c.validThru) {
+                graceMsg = `<div style="font-size:10px; color:#d97706; margin-top:5px;">⚠️ Grace Period Applied (+${GRACE_DAYS} Days)</div>`;
+            }
 
-        const upiId = "7014702933@YBL";
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${finalAmt}%26cu=INR`;
+            const finalAmt = bill - c.amount;
+            const upiId = "7014702933@YBL";
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}%26pn=DryFu%26am=${finalAmt}%26cu=INR`;
 
-        resBox.className = "result-box";
-        resBox.innerHTML = `
+            resBox.className = "result-box";
+            resBox.innerHTML = `
             <div class="res-header"><span class="res-icon">🎉</span><h3 class="res-title">CONGRATULATIONS!</h3></div>
             <div class="res-body">
                 <div class="res-row"><span>Invoice</span><span>₹${bill}</span></div>
@@ -338,9 +342,15 @@ function validateCoupon() {
                 </div>
             </div>`;
 
-        renderLocalReport();
-        billInput.value = ""; codeInput.value = "";
-    });
+            renderLocalReport();
+            billInput.value = ""; codeInput.value = "";
+        })
+        .catch((error) => {
+            // Naya professional error handling
+            resBox.style.display = 'block';
+            showError("SYSTEM ERROR", "Network error. Kripya internet check karein.", bill);
+            console.error("Firebase Database Error:", error);
+        });
 }
 
 function showError(t, m, billAmt = null) {
